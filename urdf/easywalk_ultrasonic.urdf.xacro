@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+<robot name="easywalk" xmlns:xacro="http://www.ros.org/wiki/xacro">
+  <xacro:arg name="hcsr04_yaml" default="$(find easywalk_ultrasonic)/config/hcsr04.yaml"/>
+  <xacro:property name="hcsr04_yaml_path" value="$(arg hcsr04_yaml)"/>
+  <xacro:property name="cfghcsr04" value="${xacro.load_yaml(hcsr04_yaml_path)}"/>
+
+  <xacro:include filename="$(find easywalk_description)/urdf/easywalk.urdf.xacro"/>
+  <xacro:include filename="$(find easywalk_ultrasonic)/urdf/walker_sensors.urdf.xacro"/>
+
+  <xacro:hcsr04_sensors prefix="$(arg prefix)" cfg="${cfghcsr04}"/>
+</robot>

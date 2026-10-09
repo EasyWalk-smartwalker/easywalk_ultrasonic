@@ -1,0 +1,36 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+  <xacro:macro name="hcsr04_sensors" params="prefix cfg">
+
+    <xacro:macro name="hcsr04_single" params="name xyz rpy">
+      <link name="${prefix}${name}_hcsr04_link">
+        <visual>
+          <geometry>
+            <box size="0.045 0.020 0.015"/>
+          </geometry>
+          <material name="easywalk_sensor"/>
+        </visual>
+        <collision>
+          <geometry>
+            <box size="0.045 0.020 0.015"/>
+          </geometry>
+        </collision>
+      </link>
+      <joint name="${prefix}${name}_hcsr04_joint" type="fixed">
+        <parent link="${prefix}base_link"/>
+        <child  link="${prefix}${name}_hcsr04_link"/>
+        <origin xyz="${xyz}" rpy="${rpy}"/>
+      </joint>
+    </xacro:macro>
+
+    <xacro:hcsr04_single name="L30" xyz="${cfg['hcsr04']['L30']['xyz']}" rpy="${cfg['hcsr04']['L30']['rpy']}"/>
+    <xacro:hcsr04_single name="L15" xyz="${cfg['hcsr04']['L15']['xyz']}" rpy="${cfg['hcsr04']['L15']['rpy']}"/>
+    <xacro:hcsr04_single name="CTR" xyz="${cfg['hcsr04']['CTR']['xyz']}" rpy="${cfg['hcsr04']['CTR']['rpy']}"/>
+    <xacro:hcsr04_single name="R15" xyz="${cfg['hcsr04']['R15']['xyz']}" rpy="${cfg['hcsr04']['R15']['rpy']}"/>
+    <xacro:hcsr04_single name="R30" xyz="${cfg['hcsr04']['R30']['xyz']}" rpy="${cfg['hcsr04']['R30']['rpy']}"/>
+    <xacro:hcsr04_single name="BOT" xyz="${cfg['hcsr04']['BOT']['xyz']}" rpy="${cfg['hcsr04']['BOT']['rpy']}"/>
+
+  </xacro:macro>
+
+</robot>
