@@ -15,9 +15,7 @@ setup(
         ]),
         ('share/' + package_name + '/config', [
             'config/sonar_calibration.yaml',
-            'config/sensor_params.yaml',
             'config/hcsr04.yaml',
-            'config/walker.rviz',
         ]),
         ('share/' + package_name + '/urdf', [
             'urdf/walker_sensors.urdf.xacro',
@@ -33,8 +31,6 @@ setup(
     entry_points={
         'console_scripts': [
             'serial_publisher = easywalk_ultrasonic.serial_publisher:main',
-            'decision_node = easywalk_ultrasonic.decision_node:main',
-            'distance_printer = easywalk_ultrasonic.distance_printer:main',
         ],
     },
 )

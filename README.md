@@ -15,10 +15,6 @@ Contents:
 - `launch/sonar_launch.py`: starts `serial_publisher` with the calibration file.
 - `config/hcsr04.yaml`, `urdf/`: sensor poses relative to `base_link` and the
   `hcsr04_sensors` URDF macro.
-- Legacy, not used by the current pipeline: `easywalk_ultrasonic/decision_node.py`
-  (threshold-based stop/warn/steer decisions on `walker/action`, no
-  subscriber), `easywalk_ultrasonic/distance_printer.py` (prints the distances),
-  `config/sensor_params.yaml` (thresholds of `decision_node`).
 
 ## Sensors
 
@@ -48,8 +44,7 @@ round-trip time of flight in microseconds (0 if no echo) and `status`
 Mode (ring / single sensor), firing order, pauses, echo timeout and minimum
 period per sensor can be changed over serial (see the sketch header);
 `serial_publisher` sends the values of `config/sonar_calibration.yaml` at
-startup. Lines in the old firmware format (`L30:12.3,...`) are still accepted,
-with a warning.
+startup. The old firmware format (`L30:12.3,...`) is no longer supported.
 
 ## serial_publisher
 
@@ -61,9 +56,6 @@ ping, and publishes:
 - `walker/range/<name>` (`sensor_msgs/Range`, meters) following REP 117:
   `+inf` = no echo or beyond `max_range`, `-inf` = closer than `min_range`,
   `NaN` = invalid reading.
-- `walker/distance/<name>` (`std_msgs/Float32`, centimeters): legacy topic for
-  `decision_node` / `distance_printer`; `-1` = no echo, readings closer than
-  `min_range` are published as `min_range`.
 - `walker/sonar/raw` (`std_msgs/String`): raw serial lines; record it in every
   rosbag so that distances can be recomputed offline.
 

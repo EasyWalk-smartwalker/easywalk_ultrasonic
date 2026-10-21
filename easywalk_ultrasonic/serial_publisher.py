@@ -1,22 +1,13 @@
 # Serial Publisher -- legge l'Arduino dei 6 HC-SR04 e pubblica le misure.
 #
-# Firmware atteso: arduino/walker_sensors.ino v2.0, che invia il tempo di
-# volo grezzo di ogni ping (vedi l'intestazione dello sketch). Per
-# transizione viene accettato anche il vecchio formato "L30:12.3,L15:...".
+# Firmware richiesto: arduino/walker_sensors.ino v2.0, che invia il tempo di
+# volo grezzo di ogni ping (vedi l'intestazione dello sketch).
 #
 # Topic pubblicati, per ogni sensore <name> in {l30, l15, ctr, r15, r30, bot}:
 #   walker/range/<name>     sensor_msgs/Range, metri, convenzione REP 117:
 #                             +inf = nessuna eco entro max_range
 #                             -inf = oggetto sotto min_range (troppo vicino)
 #                             NaN  = lettura non valida
-#   walker/distance/<name>  std_msgs/Float32, centimetri (LEGACY, usato da
-#                           ultrasonic_safety_node, decision_node,
-#                           distance_printer):
-#                             valida -> cm;  +inf -> -1.0 (come prima);
-#                             -inf   -> min_range in cm, cosi' i nodi che
-#                                       controllano "0 < d < soglia" vedono
-#                                       l'ostacolo invece di scartarlo;
-#                             NaN    -> non pubblicato.
 #   walker/sonar/raw        std_msgs/String, riga seriale grezza (per
 #                           ricalcolare tutto offline dai rosbag).
 #
@@ -35,7 +26,7 @@ from rclpy.executors import ExternalShutdownException
 from rclpy.node import Node
 from rclpy.time import Time
 from sensor_msgs.msg import Range
-from std_msgs.msg import Float32, String
+from std_msgs.msg import String
 import serial
 
 SENSORS = ['L30', 'L15', 'CTR', 'R15', 'R30', 'BOT']   # indice = id firmware
@@ -109,14 +100,11 @@ class SerialPublisher(Node):
 
         self.range_pubs = {
             n: self.create_publisher(Range, f'walker/range/{n.lower()}', 10) for n in SENSORS}
-        self.float_pubs = {
-            n: self.create_publisher(Float32, f'walker/distance/{n.lower()}', 10) for n in SENSORS}
         self.raw_pub = self.create_publisher(String, 'walker/sonar/raw', 50)
 
         self.sync = ClockSync()
         self.last_cycle = None
         self.lost_cycles = 0
-        self.legacy_warned = False
 
         port = self.get_parameter('serial_port').value
         baud = self.get_parameter('baud_rate').value
@@ -190,8 +178,10 @@ class SerialPublisher(Node):
                     self._handle_cycle(line)
                 elif line.startswith('#'):
                     self.get_logger().debug(f'fw: {line}')
-                elif ':' in line:
-                    self._handle_legacy(line, recv_ns)
+                else:
+                    self.get_logger().warn(
+                        f'Unknown line "{line}" (firmware v2.0 required)',
+                        throttle_duration_sec=5.0)
             except (ValueError, IndexError) as e:
                 self.get_logger().warn(f'Malformed line "{line}": {e}',
                                        throttle_duration_sec=2.0)
@@ -230,32 +220,6 @@ class SerialPublisher(Node):
                 self.lost_cycles += gap
         self.last_cycle = cycle
 
-    def _handle_legacy(self, line, recv_ns):
-        # Vecchio firmware: "L30:12.3,..." in cm con c = 343 m/s, -1 ambiguo
-        # (nessuna eco OPPURE < 2 cm). Nessun timestamp Arduino.
-        if not self.legacy_warned:
-            self.get_logger().warn(
-                'Legacy firmware detected: no raw time of flight, no timestamps, '
-                '"-1" is ambiguous. Flash arduino/walker_sensors.ino v2.0.')
-            self.legacy_warned = True
-        for part in line.split(','):
-            if ':' not in part:
-                continue
-            name, value = part.split(':')
-            name = name.strip()
-            if name not in self.calib:
-                continue
-            cm = float(value)
-            cal = self.calib[name]
-            if cm < 0:
-                out = math.inf
-            else:
-                d = cm / 100.0 * self.speed_of_sound / 343.0
-                d = cal['gain'] * d + cal['offset_m']
-                out = -math.inf if d < cal['min_range_m'] else (
-                    math.inf if d > cal['max_range_m'] else d)
-            self._publish(name, out, recv_ns)
-
     # ------------------------------------------------------- pubblicazione
 
     def _publish(self, name, value, stamp_ns):
@@ -273,16 +237,6 @@ class SerialPublisher(Node):
         msg.range = float(value)
         self.range_pubs[name].publish(msg)
 
-        if math.isnan(value):
-            return
-        if math.isinf(value) and value > 0:
-            legacy_cm = -1.0
-        elif math.isinf(value):
-            legacy_cm = cal['min_range_m'] * 100.0
-        else:
-            legacy_cm = value * 100.0
-        self.float_pubs[name].publish(Float32(data=float(legacy_cm)))
-
     def _report_health(self):
         if self.lost_cycles:
             self.get_logger().warn(f'Lost {self.lost_cycles} sonar cycles in the last 5 s')
@@ -290,8 +244,11 @@ class SerialPublisher(Node):
 
     def destroy_node(self):
         self._running = False
-        if self._reader.is_alive():
-            self._reader.join(timeout=1.0)
+        try:
+            if self._reader.is_alive():
+                self._reader.join(timeout=1.0)
+        except KeyboardInterrupt:
+            pass   # secondo Ctrl+C: il thread e' daemon, termina col processo
         self.ser.close()
         super().destroy_node()
 
