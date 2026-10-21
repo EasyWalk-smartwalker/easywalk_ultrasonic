@@ -3,7 +3,7 @@
 <package format="3">
   <name>easywalk_ultrasonic</name>
   <version>0.0.0</version>
-  <description>HC-SR04 ultrasonic sensor integration for EasyWalk: Arduino sketch, serial/ROS 2 drivers, decision logic, and sensor URDF extension.</description>
+  <description>HC-SR04 ultrasonic ring for EasyWalk: Arduino firmware and ROS 2 serial driver (serial_publisher).</description>
   <maintainer email="izzo.giada23@gmail.com">izzog</maintainer>
   <license>TODO: License declaration</license>
 
@@ -11,18 +11,9 @@
   <depend>python3-serial</depend>
   <depend>std_msgs</depend>
   <depend>sensor_msgs</depend>
-  <depend>xacro</depend>
-  <depend>robot_state_publisher</depend>
-  <depend>joint_state_publisher</depend>
-  <depend>rviz2</depend>
-  <depend>easywalk_description</depend>
   <depend>launch</depend>
   <depend>launch_ros</depend>
-
-  <test_depend>ament_copyright</test_depend>
-  <test_depend>ament_flake8</test_depend>
-  <test_depend>ament_pep257</test_depend>
-  <test_depend>python3-pytest</test_depend>
+  <depend>ament_index_python</depend>
 
   <export>
     <build_type>ament_python</build_type>
