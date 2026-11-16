@@ -67,6 +67,7 @@ char     cmdBuf[48];
 uint8_t  cmdLen = 0;
 
 // ---------------------------------------------------------------------
+// Prints the current configuration as "# key=value" lines (ignored by ROS).
 void printConfig() {
   Serial.print(F("# mode="));       Serial.println(singleMode ? F("single") : F("ring"));
   Serial.print(F("# single="));     Serial.println(singleSensor);
@@ -82,6 +83,7 @@ void printConfig() {
   Serial.print(F("# min_sensor_period_ms=")); Serial.println(minSensorPeriodMs);
 }
 
+// Parses and applies one command line (see the list in the header).
 void handleCommand(char* cmd) {
   if (cmd[0] == '?') {
     printConfig();
@@ -127,6 +129,7 @@ void handleCommand(char* cmd) {
   printConfig();
 }
 
+// Reads the incoming serial bytes without blocking; a full line is a command.
 void pollSerial() {
   while (Serial.available() > 0) {
     char c = Serial.read();
@@ -177,6 +180,7 @@ void ping(uint8_t i) {
 }
 
 // ---------------------------------------------------------------------
+// Serial at 115200 baud, all triggers LOW, then banner + configuration.
 void setup() {
   Serial.begin(115200);
   for (uint8_t i = 0; i < N_SENSORS; i++) {
@@ -188,6 +192,7 @@ void setup() {
   printConfig();
 }
 
+// One cycle: handle commands, fire the sensors, close the cycle with a "C" line.
 void loop() {
   pollSerial();
 
